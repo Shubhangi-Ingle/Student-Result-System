@@ -1,0 +1,14 @@
+### Add a new student result
+POST http://localhost:5000/api/results/add
+Content-Type: application/json
+
+{
+  "name": "Shubhangi Ingle",
+  "rollNumber": "101",
+  "marks": 92
+}
+
+###
+
+### Get result by roll number
+GET http://localhost:5000/api/results/101
