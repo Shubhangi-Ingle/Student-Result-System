@@ -1,12 +1,23 @@
 const express = require('express');
 const router = express.Router();
+const bcrypt = require('bcryptjs');
 const Result = require('../models/Result');
 
-// ✅ ADD RESULT
+// ✅ ADD RESULT with hashed password
 router.post('/add', async (req, res) => {
   const { name, rollNumber, year, branch, subjects, password } = req.body;
   try {
-    const result = new Result({ name, rollNumber, year, branch, subjects, password });
+    const hashedPassword = await bcrypt.hash(password, 10); // 🔒 Hash the password
+
+    const result = new Result({
+      name,
+      rollNumber,
+      year,
+      branch,
+      subjects,
+      password: hashedPassword, // store hashed password
+    });
+
     await result.save();
     res.status(201).json({ message: 'Result added successfully' });
   } catch (err) {
@@ -14,16 +25,18 @@ router.post('/add', async (req, res) => {
   }
 });
 
-// ✅ LOGIN with full data returned
+// ✅ LOGIN with hashed password comparison
 router.post('/login', async (req, res) => {
   const { rollNumber, password } = req.body;
-  console.log('Login request received:', rollNumber); // debug log
+  console.log('Login request received:', rollNumber); // Debug log
 
   try {
     const student = await Result.findOne({ rollNumber });
 
     if (!student) return res.status(404).json({ message: 'Student not found' });
-    if (student.password !== password) return res.status(401).json({ message: 'Invalid password' });
+
+    const isMatch = await bcrypt.compare(password, student.password); // compare hashed
+    if (!isMatch) return res.status(401).json({ message: 'Invalid password' });
 
     res.json({ message: 'Login successful', student });
   } catch (err) {
@@ -31,7 +44,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// ✅ GET by Roll Number
+// ✅ GET result by roll number
 router.get('/:rollNumber', async (req, res) => {
   try {
     const result = await Result.findOne({ rollNumber: req.params.rollNumber });
